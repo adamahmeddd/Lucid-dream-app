@@ -2,14 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { Dream, Section } from '../types';
 import { analyzeDreamContent, generateDreamVisual } from '../services/gemini';
 import { saveDream, getSections } from '../services/storage';
-import { Sparkles, Loader2, Save, Eye, EyeOff, Tag, X, Heart, Folder } from 'lucide-react';
+import { Sparkles, Loader2, Save, Eye, EyeOff, Tag, X, Heart, Folder, Lock, Crown } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 interface DreamEntryProps {
   onComplete: () => void;
+  isPremium: boolean;
+  onOpenPremium: () => void;
 }
 
-export const DreamEntry: React.FC<DreamEntryProps> = ({ onComplete }) => {
+export const DreamEntry: React.FC<DreamEntryProps> = ({ onComplete, isPremium, onOpenPremium }) => {
   const [content, setContent] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [status, setStatus] = useState<string>('');
@@ -42,8 +44,22 @@ export const DreamEntry: React.FC<DreamEntryProps> = ({ onComplete }) => {
     setCustomLabels(customLabels.filter(l => l !== label));
   };
 
+  const toggleFavorite = () => {
+      if (!isPremium) {
+          onOpenPremium();
+          return;
+      }
+      setIsFavorite(!isFavorite);
+  }
+
   const handleSubmit = async () => {
     if (!content.trim()) return;
+
+    // Feature Lock: Interpret Dream
+    if (!isPremium) {
+        onOpenPremium();
+        return;
+    }
 
     setIsProcessing(true);
     setStatus('Consulting the oracle...');
@@ -87,46 +103,52 @@ export const DreamEntry: React.FC<DreamEntryProps> = ({ onComplete }) => {
 
   return (
     <div className="max-w-3xl mx-auto w-full animate-float">
-      <div className="bg-slate-800/40 backdrop-blur-md rounded-2xl border border-slate-700/50 p-8 shadow-2xl">
-        <h2 className="text-3xl font-serif text-indigo-100 mb-6 flex items-center gap-3">
+      <div className="bg-slate-800/40 backdrop-blur-md rounded-2xl border border-slate-700/50 p-6 md:p-8 shadow-2xl">
+        <h2 className="text-2xl md:text-3xl font-serif text-indigo-100 mb-6 flex items-center gap-3">
           <Sparkles className="text-yellow-400" />
           Record Your Dream
         </h2>
         
         {/* Controls Section */}
         <div className="flex flex-col gap-4 mb-6">
-            <div className="flex flex-wrap items-center gap-4">
+            <div className="flex flex-wrap items-center gap-2 md:gap-4">
                 <button
                     onClick={() => setIsLucid(!isLucid)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all duration-300 ${
+                    className={`flex items-center gap-2 px-3 py-2 md:px-4 rounded-xl border transition-all duration-300 text-xs md:text-sm ${
                         isLucid 
                         ? 'bg-gradient-to-r from-purple-900 to-indigo-900 border-lucid-500 text-lucid-400 shadow-[0_0_15px_rgba(234,179,8,0.3)]' 
                         : 'bg-slate-900/50 border-slate-700 text-slate-400 hover:border-slate-500'
                     }`}
                 >
-                    {isLucid ? <Eye size={18} /> : <EyeOff size={18} />}
+                    {isLucid ? <Eye size={16} /> : <EyeOff size={16} />}
                     <span className="font-bold">{isLucid ? 'Lucid Dream' : 'Regular Dream'}</span>
                 </button>
 
                 <button
-                    onClick={() => setIsFavorite(!isFavorite)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all duration-300 ${
+                    onClick={toggleFavorite}
+                    className={`flex items-center gap-2 px-3 py-2 md:px-4 rounded-xl border transition-all duration-300 text-xs md:text-sm relative ${
                         isFavorite 
                         ? 'bg-pink-900/40 border-pink-500 text-pink-400' 
                         : 'bg-slate-900/50 border-slate-700 text-slate-400 hover:border-slate-500'
                     }`}
                 >
-                    <Heart size={18} fill={isFavorite ? "currentColor" : "none"} />
+                    {isFavorite ? (
+                        <Heart size={16} fill="currentColor" />
+                    ) : !isPremium ? (
+                        <Lock size={12} className="text-amber-500" />
+                    ) : (
+                        <Heart size={16} />
+                    )}
                     <span className="font-bold">Favorite</span>
                 </button>
 
                 {sections.length > 0 && (
                   <div className="relative">
-                     <Folder size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                     <Folder size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                      <select
                         value={selectedSectionId}
                         onChange={(e) => setSelectedSectionId(e.target.value)}
-                        className="bg-slate-900/50 border border-slate-700 text-slate-300 text-sm rounded-xl py-2 pl-9 pr-8 focus:outline-none focus:border-mystic-500 appearance-none cursor-pointer hover:bg-slate-800"
+                        className="bg-slate-900/50 border border-slate-700 text-slate-300 text-base md:text-sm rounded-xl py-2 pl-8 pr-6 focus:outline-none focus:border-mystic-500 appearance-none cursor-pointer hover:bg-slate-800"
                      >
                         <option value="">No Collection</option>
                         {sections.map(s => (
@@ -145,7 +167,7 @@ export const DreamEntry: React.FC<DreamEntryProps> = ({ onComplete }) => {
                     onChange={(e) => setCurrentLabel(e.target.value)}
                     onKeyDown={handleAddLabel}
                     placeholder="Add custom labels (Press Enter)"
-                    className="w-full bg-slate-900/50 border border-slate-700 rounded-xl py-2 pl-9 pr-4 text-sm text-slate-200 focus:outline-none focus:border-mystic-500 transition-colors"
+                    className="w-full bg-slate-900/50 border border-slate-700 rounded-xl py-2 pl-9 pr-4 text-base md:text-sm text-slate-200 focus:outline-none focus:border-mystic-500 transition-colors"
                 />
             </div>
         </div>
@@ -167,34 +189,38 @@ export const DreamEntry: React.FC<DreamEntryProps> = ({ onComplete }) => {
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="I was floating above a neon city..."
-            className="w-full h-64 bg-slate-900/50 border border-slate-700 rounded-xl p-6 text-lg text-slate-200 focus:ring-2 focus:ring-mystic-500 focus:outline-none resize-none transition-all placeholder-slate-600 font-serif leading-relaxed"
+            className="w-full h-48 md:h-64 bg-slate-900/50 border border-slate-700 rounded-xl p-4 md:p-6 text-base md:text-lg text-slate-200 focus:ring-2 focus:ring-mystic-500 focus:outline-none resize-none transition-all placeholder-slate-600 font-serif leading-relaxed"
             disabled={isProcessing}
           />
         </div>
 
-        <div className="flex items-center justify-between">
-            <div className="text-slate-400 text-sm">
+        <div className="flex items-center justify-between gap-4">
+            <div className="text-slate-400 text-xs md:text-sm hidden md:block">
                 {isProcessing ? (
                     <span className="flex items-center gap-2 text-mystic-400">
                         <Loader2 className="animate-spin" size={16}/>
                         {status}
                     </span>
                 ) : (
-                    <span>Share as much detail as you can remember.</span>
+                    <span>Share as much detail as you can.</span>
                 )}
             </div>
 
             <button
                 onClick={handleSubmit}
                 disabled={!content.trim() || isProcessing}
-                className={`flex items-center gap-2 px-8 py-3 rounded-full font-bold transition-all transform hover:scale-105 ${
+                className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 md:px-8 py-3 rounded-full font-bold transition-all transform hover:scale-105 ${
                     !content.trim() || isProcessing
                     ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-mystic-600 to-indigo-600 text-white shadow-lg shadow-mystic-900/50 hover:shadow-mystic-600/50'
+                    : isPremium 
+                        ? 'bg-gradient-to-r from-mystic-600 to-indigo-600 text-white shadow-lg shadow-mystic-900/50 hover:shadow-mystic-600/50'
+                        : 'bg-gradient-to-r from-slate-700 to-slate-600 text-slate-300 hover:bg-slate-600'
                 }`}
             >
-                {isProcessing ? 'Interpreting...' : 'Interpret Dream'}
-                {!isProcessing && <Save size={18} />}
+                {!isPremium && <Crown size={16} className="text-amber-400" />}
+                {isProcessing ? 'Interpreting...' : isPremium ? 'Interpret Dream' : 'Interpret (Premium)'}
+                {!isProcessing && isPremium && <Save size={18} />}
+                {!isProcessing && !isPremium && <Lock size={16} />}
             </button>
         </div>
       </div>

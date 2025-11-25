@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Dream, Section } from '../types';
 import { format } from 'date-fns';
-import { ArrowLeft, MessageCircle, Send, Trash2, Download, Sparkles, Tag, Heart, Folder } from 'lucide-react';
+import { ArrowLeft, MessageCircle, Send, Trash2, Download, Sparkles, Tag, Heart, Folder, Lock, Edit2, X, Save } from 'lucide-react';
 import { createDreamChat } from '../services/gemini';
 import { deleteDream, updateDream, getSections } from '../services/storage';
 
@@ -9,6 +9,8 @@ interface DreamDetailProps {
   dream: Dream;
   onBack: () => void;
   onDelete: () => void;
+  isPremium: boolean;
+  onOpenPremium: () => void;
 }
 
 interface ChatMessage {
@@ -16,12 +18,19 @@ interface ChatMessage {
     text: string;
 }
 
-export const DreamDetail: React.FC<DreamDetailProps> = ({ dream, onBack, onDelete }) => {
+export const DreamDetail: React.FC<DreamDetailProps> = ({ dream, onBack, onDelete, isPremium, onOpenPremium }) => {
   const [chatInput, setChatInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isChatting, setIsChatting] = useState(false);
   const [sections, setSections] = useState<Section[]>([]);
   
+  // UI State
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(dream.content);
+  const [editDate, setEditDate] = useState(dream.date);
+  const [editLabels, setEditLabels] = useState<string[]>(dream.customLabels || []);
+  const [newLabel, setNewLabel] = useState('');
+
   // Local state for instant UI updates
   const [isFavorite, setIsFavorite] = useState(dream.isFavorite);
   const [currentSectionId, setCurrentSectionId] = useState(dream.sectionId || '');
@@ -45,6 +54,10 @@ export const DreamDetail: React.FC<DreamDetailProps> = ({ dream, onBack, onDelet
   }, [messages]);
 
   const handleToggleFavorite = () => {
+    if (!isPremium) {
+        onOpenPremium();
+        return;
+    }
     const newVal = !isFavorite;
     setIsFavorite(newVal);
     updateDream({ ...dream, isFavorite: newVal });
@@ -90,29 +103,56 @@ export const DreamDetail: React.FC<DreamDetailProps> = ({ dream, onBack, onDelet
   };
 
   const handleDelete = () => {
-      if(confirm("Are you sure you want to wake up from this dream forever?")) {
-          deleteDream(dream.id);
-          onDelete();
-      }
+      // Direct delete without native confirm to avoid mobile issues
+      deleteDream(dream.id);
+      onDelete();
   }
+
+  const handleSaveEdit = () => {
+      const updatedDream = {
+          ...dream,
+          content: editContent,
+          date: editDate,
+          customLabels: editLabels
+      };
+      updateDream(updatedDream);
+      setIsEditing(false);
+      // Re-init chat context with new content if needed, though usually not critical for small edits
+  };
+
+  const handleAddLabel = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && newLabel.trim()) {
+        e.preventDefault();
+        if (!editLabels.includes(newLabel.trim())) {
+            setEditLabels([...editLabels, newLabel.trim()]);
+        }
+        setNewLabel('');
+    }
+  };
+
+  const removeLabel = (label: string) => {
+      setEditLabels(editLabels.filter(l => l !== label));
+  };
 
   return (
     <div className="max-w-5xl mx-auto animate-fadeIn pb-12">
       <div className="flex justify-between items-center mb-6">
         <button onClick={onBack} className="flex items-center text-slate-400 hover:text-white transition-colors">
-            <ArrowLeft size={20} className="mr-2" /> Back to Journal
+            <ArrowLeft size={20} className="mr-2" /> Back
         </button>
         <div className="flex items-center gap-4">
-            <div className="text-slate-500 text-sm">
-                {format(new Date(dream.date), 'MMMM do, yyyy • h:mm a')}
-            </div>
-            
+            {!isEditing && (
+                 <div className="text-slate-500 text-sm hidden md:block">
+                    {format(new Date(dream.date), 'MMMM do, yyyy • h:mm a')}
+                </div>
+            )}
+           
             <button 
                 onClick={handleToggleFavorite}
-                className={`p-2 rounded-full transition-colors ${isFavorite ? 'bg-pink-900/40 text-pink-500' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
+                className={`p-2 rounded-full transition-colors relative group ${isFavorite ? 'bg-pink-900/40 text-pink-500' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
                 title="Toggle Favorite"
             >
-                <Heart size={20} fill={isFavorite ? "currentColor" : "none"} />
+                {isFavorite ? <Heart size={20} fill="currentColor" /> : isPremium ? <Heart size={20} /> : <Lock size={16} className="text-amber-500" />}
             </button>
             
             {sections.length > 0 && (
@@ -133,6 +173,14 @@ export const DreamDetail: React.FC<DreamDetailProps> = ({ dream, onBack, onDelet
                     </select>
                 </div>
             )}
+
+            <button
+                onClick={() => setIsEditing(!isEditing)}
+                className={`p-2 rounded-full transition-colors ${isEditing ? 'bg-mystic-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
+                title="Edit Dream"
+            >
+                <Edit2 size={18} />
+            </button>
         </div>
       </div>
 
@@ -140,7 +188,7 @@ export const DreamDetail: React.FC<DreamDetailProps> = ({ dream, onBack, onDelet
         
         {/* Left Column: Visuals & Original Content */}
         <div className="space-y-6">
-          {dream.imageUrl && (
+          {!isEditing && dream.imageUrl && (
             <div className="rounded-2xl overflow-hidden shadow-2xl shadow-indigo-900/30 border border-slate-700/50 relative group">
               <img src={dream.imageUrl} alt={dream.analysis?.title} className="w-full h-auto object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent opacity-60"></div>
@@ -163,22 +211,84 @@ export const DreamDetail: React.FC<DreamDetailProps> = ({ dream, onBack, onDelet
           )}
 
           <div className="bg-slate-800/40 backdrop-blur p-6 rounded-2xl border border-slate-700 relative overflow-hidden">
-            <div className="absolute -right-10 -top-10 text-slate-700/20 rotate-12">
-                <MessageCircle size={150} />
-            </div>
-            <h3 className="text-slate-400 uppercase text-xs font-bold tracking-wider mb-3">Original Entry</h3>
-            <p className="text-slate-200 text-lg leading-relaxed font-serif italic relative z-10">
-              "{dream.content}"
-            </p>
-            
-            {dream.customLabels && dream.customLabels.length > 0 && (
-                <div className="mt-6 flex flex-wrap gap-2 pt-4 border-t border-slate-700/50">
-                    {dream.customLabels.map(label => (
-                        <span key={label} className="flex items-center gap-1 text-sm text-indigo-300 bg-indigo-900/20 px-3 py-1 rounded-full border border-indigo-500/20">
-                            <Tag size={12} /> {label}
-                        </span>
-                    ))}
+            {!isEditing && (
+                <div className="absolute -right-10 -top-10 text-slate-700/20 rotate-12 pointer-events-none">
+                    <MessageCircle size={150} />
                 </div>
+            )}
+            
+            <div className="flex items-center justify-between mb-3 relative z-10">
+                <h3 className="text-slate-400 uppercase text-xs font-bold tracking-wider">
+                    {isEditing ? 'Edit Entry' : 'Original Entry'}
+                </h3>
+            </div>
+
+            {isEditing ? (
+                <div className="space-y-4">
+                     <div>
+                        <label className="text-xs text-slate-500 mb-1 block">Date</label>
+                        <input 
+                            type="datetime-local" 
+                            value={editDate.substring(0, 16)}
+                            onChange={(e) => setEditDate(e.target.value)}
+                            className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm w-full focus:border-mystic-500 outline-none"
+                        />
+                     </div>
+                     
+                     <div>
+                        <label className="text-xs text-slate-500 mb-1 block">Content</label>
+                        <textarea
+                            value={editContent}
+                            onChange={(e) => setEditContent(e.target.value)}
+                            className="w-full h-64 bg-slate-900 border border-slate-700 rounded-lg p-3 text-slate-200 text-base focus:border-mystic-500 outline-none resize-none font-serif"
+                        />
+                     </div>
+
+                     <div>
+                         <label className="text-xs text-slate-500 mb-1 block">Custom Labels</label>
+                         <div className="flex flex-wrap gap-2 mb-2">
+                            {editLabels.map(label => (
+                                <span key={label} className="flex items-center gap-1 px-2 py-1 bg-indigo-900/40 border border-indigo-700/50 rounded-full text-xs text-indigo-200">
+                                    {label}
+                                    <button onClick={() => removeLabel(label)} className="hover:text-white"><X size={12} /></button>
+                                </span>
+                            ))}
+                         </div>
+                         <input 
+                            type="text" 
+                            value={newLabel}
+                            onChange={(e) => setNewLabel(e.target.value)}
+                            onKeyDown={handleAddLabel}
+                            placeholder="Type label and press Enter..."
+                            className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm w-full focus:border-mystic-500 outline-none"
+                        />
+                     </div>
+
+                     <div className="flex gap-2 pt-2">
+                         <button onClick={handleSaveEdit} className="flex-1 bg-mystic-600 hover:bg-mystic-500 text-white py-2 rounded-lg font-bold flex items-center justify-center gap-2">
+                             <Save size={16} /> Save Changes
+                         </button>
+                         <button onClick={() => setIsEditing(false)} className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg">
+                             Cancel
+                         </button>
+                     </div>
+                </div>
+            ) : (
+                <>
+                    <p className="text-slate-200 text-lg leading-relaxed font-serif italic relative z-10 whitespace-pre-wrap">
+                    "{dream.content}"
+                    </p>
+                    
+                    {dream.customLabels && dream.customLabels.length > 0 && (
+                        <div className="mt-6 flex flex-wrap gap-2 pt-4 border-t border-slate-700/50">
+                            {dream.customLabels.map(label => (
+                                <span key={label} className="flex items-center gap-1 text-sm text-indigo-300 bg-indigo-900/20 px-3 py-1 rounded-full border border-indigo-500/20">
+                                    <Tag size={12} /> {label}
+                                </span>
+                            ))}
+                        </div>
+                    )}
+                </>
             )}
           </div>
         </div>
@@ -196,7 +306,11 @@ export const DreamDetail: React.FC<DreamDetailProps> = ({ dream, onBack, onDelet
                  <h1 className="text-3xl font-serif font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-200 to-purple-200 leading-tight">
                     {dream.analysis?.title || "Untitled"}
                  </h1>
-                 <button onClick={handleDelete} className="text-slate-600 hover:text-red-400 transition-colors p-2 hover:bg-slate-800 rounded-full">
+                 <button 
+                    onClick={handleDelete} 
+                    className="text-slate-600 hover:text-red-400 transition-colors p-2 hover:bg-slate-800 rounded-full"
+                    title="Delete permanently"
+                 >
                      <Trash2 size={18} />
                  </button>
              </div>
@@ -219,8 +333,8 @@ export const DreamDetail: React.FC<DreamDetailProps> = ({ dream, onBack, onDelet
           </div>
 
           {/* Dream Oracle Chat */}
-          <div className="bg-slate-900/80 border border-slate-700/50 rounded-2xl overflow-hidden flex flex-col h-[450px] shadow-lg">
-              <div className="p-4 bg-slate-800/80 border-b border-slate-700 flex items-center gap-2 backdrop-blur-sm">
+          <div className="bg-slate-900/80 border border-slate-700/50 rounded-2xl overflow-hidden flex flex-col h-[50vh] md:h-[450px] shadow-lg">
+              <div className="p-4 bg-slate-800/80 border-b border-slate-700 flex items-center gap-2 backdrop-blur-sm shrink-0">
                   <div className="p-1.5 bg-mystic-600 rounded-lg">
                     <MessageCircle size={16} className="text-white" />
                   </div>
@@ -232,7 +346,7 @@ export const DreamDetail: React.FC<DreamDetailProps> = ({ dream, onBack, onDelet
               
               <div className="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth">
                   {messages.length === 0 && (
-                      <div className="text-center text-slate-500 mt-20 text-sm px-10">
+                      <div className="text-center text-slate-500 mt-10 md:mt-20 text-sm px-10">
                           <p className="mb-2">"Ask me about the symbols in your dream..."</p>
                           <p className="text-xs opacity-60">Possible questions: What does the water represent? Why was I flying?</p>
                       </div>
@@ -251,7 +365,7 @@ export const DreamDetail: React.FC<DreamDetailProps> = ({ dream, onBack, onDelet
                   <div ref={messagesEndRef} />
               </div>
 
-              <div className="p-3 bg-slate-800 border-t border-slate-700 flex gap-2">
+              <div className="p-3 bg-slate-800 border-t border-slate-700 flex gap-2 shrink-0">
                   <input 
                     type="text" 
                     value={chatInput}

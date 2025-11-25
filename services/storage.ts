@@ -2,6 +2,7 @@ import { Dream, Section } from "../types";
 
 const STORAGE_KEY = 'somnium_dreams_v1';
 const SECTIONS_KEY = 'somnium_sections_v1';
+const PREMIUM_KEY = 'somnium_premium_v1';
 
 export const getDreams = (): Dream[] => {
   try {
@@ -57,4 +58,17 @@ export const deleteSection = (id: string): void => {
   const dreams = getDreams();
   const updatedDreams = dreams.map(d => d.sectionId === id ? { ...d, sectionId: undefined } : d);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedDreams));
+};
+
+// Premium Management
+export const getPremiumStatus = (): boolean => {
+  try {
+    return localStorage.getItem(PREMIUM_KEY) === 'true';
+  } catch (e) {
+    return false;
+  }
+};
+
+export const savePremiumStatus = (isPremium: boolean): void => {
+  localStorage.setItem(PREMIUM_KEY, String(isPremium));
 };

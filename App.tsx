@@ -4,7 +4,8 @@ import { DreamEntry } from './components/DreamEntry';
 import { DreamCard } from './components/DreamCard';
 import { DreamDetail } from './components/DreamDetail';
 import { Stats } from './components/Stats';
-import { getDreams, getSections, saveSection, deleteSection } from './services/storage';
+import { SubscriptionModal } from './components/SubscriptionModal';
+import { getDreams, getSections, saveSection, deleteSection, getPremiumStatus, savePremiumStatus, deleteDream } from './services/storage';
 import { Dream, ViewState, Section } from './types';
 import { Plus, Heart, Folder } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
@@ -16,6 +17,10 @@ const App: React.FC = () => {
   const [selectedDream, setSelectedDream] = useState<Dream | null>(null);
   const [selectedSectionId, setSelectedSectionId] = useState<string | undefined>(undefined);
   const [apiKeyMissing, setApiKeyMissing] = useState(false);
+  
+  // Premium State
+  const [isPremium, setIsPremium] = useState(false);
+  const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
 
   useEffect(() => {
     // Check for API Key env var
@@ -23,11 +28,17 @@ const App: React.FC = () => {
       setApiKeyMissing(true);
     }
     loadData();
+    setIsPremium(getPremiumStatus());
   }, []);
 
   const loadData = () => {
     setDreams(getDreams());
     setSections(getSections());
+  };
+
+  const handleUpgrade = () => {
+      setIsPremium(true);
+      savePremiumStatus(true);
   };
 
   const handleAddSection = (name: string) => {
@@ -36,14 +47,18 @@ const App: React.FC = () => {
   };
 
   const handleDeleteSection = (id: string) => {
-      if (confirm("Delete this collection? Dreams will remain but lose their collection tag.")) {
-        deleteSection(id);
-        if (selectedSectionId === id) {
-            setView(ViewState.DASHBOARD);
-            setSelectedSectionId(undefined);
-        }
-        loadData();
+      // Removed confirm dialog to fix mobile touch issues
+      deleteSection(id);
+      if (selectedSectionId === id) {
+          setView(ViewState.DASHBOARD);
+          setSelectedSectionId(undefined);
       }
+      loadData();
+  };
+
+  const handleDeleteDream = (id: string) => {
+      deleteDream(id);
+      loadData();
   };
 
   const handleDreamClick = (dream: Dream) => {
@@ -87,10 +102,14 @@ const App: React.FC = () => {
 
     switch (view) {
       case ViewState.NEW_ENTRY:
-        return <DreamEntry onComplete={() => {
-            loadData();
-            setView(ViewState.DASHBOARD);
-        }} />;
+        return <DreamEntry 
+            onComplete={() => {
+                loadData();
+                setView(ViewState.DASHBOARD);
+            }} 
+            isPremium={isPremium}
+            onOpenPremium={() => setIsSubscriptionModalOpen(true)}
+        />;
       
       case ViewState.DREAM_DETAIL:
         return selectedDream ? (
@@ -102,6 +121,8 @@ const App: React.FC = () => {
                     setView(ViewState.DASHBOARD);
                     loadData();
                 }}
+                isPremium={isPremium}
+                onOpenPremium={() => setIsSubscriptionModalOpen(true)}
             />
         ) : (
             <div onClick={handleBackToDashboard}>Error: Dream not found. Click to go back.</div>
@@ -118,7 +139,7 @@ const App: React.FC = () => {
         
         return (
           <div className="animate-fadeIn">
-            <div className="flex justify-between items-end mb-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
                 <div>
                     <h2 className="text-3xl font-serif text-slate-100 flex items-center gap-3">
                         {view === ViewState.FAVORITES && <Heart className="text-pink-500" fill="currentColor"/>}
@@ -136,14 +157,14 @@ const App: React.FC = () => {
                 </div>
                 <button 
                 onClick={() => setView(ViewState.NEW_ENTRY)}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-bold transition-colors"
+                className="w-full md:w-auto bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 text-sm font-bold transition-colors"
                 >
                     <Plus size={16} /> New Dream
                 </button>
             </div>
             
             {filteredDreams.length === 0 ? (
-               <div className="flex flex-col items-center justify-center h-[50vh] text-slate-500 bg-slate-800/20 rounded-3xl border-2 border-dashed border-slate-700">
+               <div className="flex flex-col items-center justify-center h-[50vh] text-slate-500 bg-slate-800/20 rounded-3xl border-2 border-dashed border-slate-700 p-6 text-center">
                    <p className="mb-4 text-lg">No dreams found here.</p>
                    {view === ViewState.DASHBOARD && (
                         <button 
@@ -155,12 +176,13 @@ const App: React.FC = () => {
                    )}
                </div>
             ) : (
-              <div className="grid grid-cols-1 gap-6">
+              <div className="grid grid-cols-1 gap-6 pb-20 md:pb-0">
                 {filteredDreams.map((dream) => (
                   <DreamCard 
                     key={dream.id} 
                     dream={dream} 
                     onClick={() => handleDreamClick(dream)} 
+                    onDelete={handleDeleteDream}
                   />
                 ))}
               </div>
@@ -174,7 +196,14 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-900 text-slate-200 font-sans selection:bg-mystic-500 selection:text-white">
+    <div className="flex flex-col md:flex-row h-[100dvh] w-screen bg-slate-900 text-slate-200 font-sans selection:bg-mystic-500 selection:text-white overflow-hidden">
+      <SubscriptionModal 
+        isOpen={isSubscriptionModalOpen} 
+        onClose={() => setIsSubscriptionModalOpen(false)}
+        onUpgrade={handleUpgrade}
+      />
+      
+      {/* Navigation now handles its own responsive placement */}
       <Navigation 
         currentView={view} 
         setView={(v) => {
@@ -189,8 +218,12 @@ const App: React.FC = () => {
             setSelectedSectionId(id);
             setView(ViewState.SECTION);
         }}
+        isPremium={isPremium}
+        onOpenPremium={() => setIsSubscriptionModalOpen(true)}
       />
-      <main className="flex-1 p-8 md:p-12 overflow-y-auto h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800 via-slate-900 to-black">
+
+      {/* Main Content Area: Scrollable */}
+      <main className="flex-1 p-4 md:p-12 overflow-y-auto min-h-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800 via-slate-900 to-black">
         <div className="max-w-6xl mx-auto">
             {renderContent()}
         </div>

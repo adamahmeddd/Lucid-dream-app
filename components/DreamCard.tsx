@@ -1,14 +1,15 @@
 import React from 'react';
 import { Dream } from '../types';
-import { Calendar, Tag, Sparkles, Heart } from 'lucide-react';
+import { Calendar, Tag, Sparkles, Heart, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface DreamCardProps {
   dream: Dream;
   onClick: () => void;
+  onDelete: (id: string) => void;
 }
 
-export const DreamCard: React.FC<DreamCardProps> = ({ dream, onClick }) => {
+export const DreamCard: React.FC<DreamCardProps> = ({ dream, onClick, onDelete }) => {
   const { analysis, date, imageUrl, isLucid, customLabels, isFavorite } = dream;
   
   // Default values if analysis failed but saved
@@ -84,12 +85,25 @@ export const DreamCard: React.FC<DreamCardProps> = ({ dream, onClick }) => {
                     </p>
                 </div>
 
-                <div className="flex flex-wrap gap-2 mt-auto">
-                    {analysis?.tags.slice(0, 3).map(tag => (
-                        <span key={tag} className="px-2 py-1 bg-slate-700/50 rounded text-xs text-slate-300 flex items-center gap-1">
-                            <Tag size={10} /> {tag}
-                        </span>
-                    ))}
+                <div className="flex flex-wrap gap-2 mt-auto items-center justify-between">
+                    <div className="flex gap-2">
+                        {analysis?.tags.slice(0, 3).map(tag => (
+                            <span key={tag} className="px-2 py-1 bg-slate-700/50 rounded text-xs text-slate-300 flex items-center gap-1">
+                                <Tag size={10} /> {tag}
+                            </span>
+                        ))}
+                    </div>
+                    
+                    <button 
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onDelete(dream.id);
+                        }}
+                        className="p-2 text-slate-600 hover:text-red-400 hover:bg-slate-800 rounded-full transition-colors z-20"
+                        title="Delete dream"
+                    >
+                        <Trash2 size={16} />
+                    </button>
                 </div>
             </div>
         </div>
