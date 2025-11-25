@@ -71,7 +71,7 @@ export const Navigation: React.FC<NavigationProps> = ({
           <div className="p-1.5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg">
             <Moon className="text-white" size={18} />
           </div>
-          <span className="font-serif font-bold text-lg text-slate-100">Dreamscape</span>
+          <span className="font-serif font-bold text-lg text-slate-100">Dream Lab</span>
         </div>
         <button 
           onClick={() => setIsMobileMenuOpen(true)}
@@ -103,7 +103,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                 <Moon className="text-white" size={24} />
               </div>
               <h1 className="text-2xl font-serif font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-200 to-purple-400 hidden md:block">
-                Dreamscape
+                Dream Lab
               </h1>
               {/* Mobile Only Logo in Drawer */}
               <h1 className="text-xl font-serif font-bold text-slate-200 md:hidden">

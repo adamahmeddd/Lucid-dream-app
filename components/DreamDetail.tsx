@@ -201,9 +201,9 @@ export const DreamDetail: React.FC<DreamDetailProps> = ({ dream, onBack, onDelet
 
               <a 
                 href={dream.imageUrl} 
-                download={`somnium-${dream.id}.png`}
+                download={`dreamlab-${dream.id}.png`}
                 className="absolute bottom-4 right-4 p-2 bg-black/50 backdrop-blur rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70 text-white"
-                title="Download Dreamscape"
+                title="Download Dream Lab"
               >
                   <Download size={20} />
               </a>

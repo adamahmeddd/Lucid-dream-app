@@ -1,5 +1,5 @@
 {
-  "name": "Dreamscape",
+  "name": "Dream Lab",
   "description": "A cozy, intelligent dream journal that visualizes and interprets your dreams using Gemini AI.",
   "requestFramePermissions": [
     "microphone"

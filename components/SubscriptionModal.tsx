@@ -13,7 +13,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, on
   const handlePayment = (plan: 'monthly' | 'yearly') => {
     // 1. Construct PayPal Link
     const email = "adamahmedadelabdelwahab@gmail.com";
-    const itemName = plan === 'monthly' ? "Dreamscape Premium (Monthly)" : "Dreamscape Premium (Yearly)";
+    const itemName = plan === 'monthly' ? "Dream Lab Premium (Monthly)" : "Dream Lab Premium (Yearly)";
     const amount = plan === 'monthly' ? "10.00" : "99.00";
     // Using standard PayPal "Buy Now" link structure
     const paypalLink = `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${email}&item_name=${encodeURIComponent(itemName)}&amount=${amount}&currency_code=USD`;
@@ -57,7 +57,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, on
             </div>
             <h2 className="text-3xl font-serif font-bold text-white mb-4">Unlock the<br/>Oracle</h2>
             <p className="text-indigo-200 mb-8 leading-relaxed">
-              Dive deeper into your subconscious with Dreamscape Premium. Reveal hidden meanings and organize your inner world.
+              Dive deeper into your subconscious with Dream Lab Premium. Reveal hidden meanings and organize your inner world.
             </p>
 
             <ul className="space-y-4">
