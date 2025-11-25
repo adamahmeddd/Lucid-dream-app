@@ -21,10 +21,6 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, on
     const amount = plan === 'monthly' ? "10.00" : "99.00";
     
     // 2. Redirect Logic
-    // We append ?payment_success=true to the return URL so the app detects it upon return
-    // Note: In a real app, you configure this in PayPal Dashboard "Auto Return". 
-    // Here we try to hint it via query params but manual setup in PayPal is required for 100% reliability.
-    
     const paypalLink = `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${email}&item_name=${encodeURIComponent(itemName)}&amount=${amount}&currency_code=USD`;
 
     // 3. Open PayPal
@@ -53,8 +49,8 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, on
       {/* Flex container to center content but allow scrolling on small screens/keyboard open */}
       <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
         
-        {/* Modal Content */}
-        <div className="relative bg-slate-800 rounded-3xl shadow-2xl border border-slate-700 max-w-4xl w-full flex flex-col md:flex-row text-left z-10 my-8">
+        {/* Modal Content - Added animate-float back */}
+        <div className="relative bg-slate-800 rounded-3xl shadow-2xl border border-slate-700 max-w-4xl w-full flex flex-col md:flex-row text-left z-10 my-8 animate-float">
           <button 
             onClick={onClose}
             className="absolute top-4 right-4 text-slate-400 hover:text-white z-20 p-2 bg-slate-900/50 rounded-full"
@@ -164,6 +160,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, on
                                   setErrorMsg('');
                               }}
                               onFocus={(e) => {
+                                // Scroll element into view when keyboard opens
                                 setTimeout(() => {
                                   e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
                                 }, 300);
