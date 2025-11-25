@@ -215,6 +215,7 @@ const App: React.FC = () => {
       <SubscriptionModal 
         isOpen={isSubscriptionModalOpen} 
         onClose={() => setIsSubscriptionModalOpen(false)}
+        onUpgrade={handleUpgrade}
       />
 
       {/* Payment Success Toast */}

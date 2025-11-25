@@ -1,12 +1,17 @@
-import React from 'react';
-import { X, Check, Crown, Sparkles, Lock, ExternalLink } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Check, Crown, Sparkles, Lock, ExternalLink, Gift } from 'lucide-react';
 
 interface SubscriptionModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onUpgrade?: () => void; // Optional callback for instant upgrades
 }
 
-export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, onClose }) => {
+export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, onClose, onUpgrade }) => {
+  const [showRedeem, setShowRedeem] = useState(false);
+  const [promoCode, setPromoCode] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
+
   if (!isOpen) return null;
 
   const handlePayment = (plan: 'monthly' | 'yearly') => {
@@ -15,13 +20,21 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, on
     const itemName = plan === 'monthly' ? "Dream Lab Premium (Monthly)" : "Dream Lab Premium (Yearly)";
     const amount = plan === 'monthly' ? "10.00" : "99.00";
     
-    // 2. Build PayPal Link (Standard Business Link)
-    // Note: To make the redirect work automatically, you MUST set 'Auto Return' to ON in your PayPal Business Dashboard
-    // and set the Return URL to your Vercel Link (e.g., https://dream-lab.vercel.app/?payment_success=true)
     const paypalLink = `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${email}&item_name=${encodeURIComponent(itemName)}&amount=${amount}&currency_code=USD`;
 
     // 3. Open PayPal
     window.location.href = paypalLink;
+  };
+
+  const handleRedeem = () => {
+      if (promoCode.trim().toUpperCase() === 'FRIEND') {
+          if (onUpgrade) {
+              onUpgrade();
+              onClose();
+          }
+      } else {
+          setErrorMsg("Invalid code. Please try again.");
+      }
   };
 
   return (
@@ -79,13 +92,13 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, on
         </div>
 
         {/* Right Side: Pricing */}
-        <div className="md:w-7/12 p-8 bg-slate-800">
+        <div className="md:w-7/12 p-8 bg-slate-800 flex flex-col h-full">
           <div className="text-center mb-8">
             <h3 className="text-xl font-bold text-white">Choose your journey</h3>
             <p className="text-slate-400 text-sm">Cancel anytime. Secure payment via PayPal.</p>
           </div>
 
-          <div className="grid gap-4">
+          <div className="grid gap-4 flex-1">
             {/* Monthly Plan */}
             <div className="border border-slate-600 rounded-2xl p-4 hover:border-mystic-500 transition-all cursor-pointer bg-slate-800/50 hover:bg-slate-700/50 group relative">
               <div className="flex justify-between items-center">
@@ -130,9 +143,43 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, on
             </div>
           </div>
 
-          <p className="mt-6 text-xs text-center text-slate-500">
-            Note: After payment, PayPal will redirect you back here to unlock your features automatically.
-          </p>
+          <div className="mt-8 pt-4 border-t border-slate-700">
+              {showRedeem ? (
+                  <div className="animate-fadeIn">
+                      <p className="text-xs text-slate-400 mb-2">Enter secret code:</p>
+                      <div className="flex gap-2">
+                          <input 
+                            type="text" 
+                            value={promoCode}
+                            onChange={(e) => {
+                                setPromoCode(e.target.value);
+                                setErrorMsg('');
+                            }}
+                            placeholder="Code..."
+                            className="flex-1 bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-mystic-500"
+                          />
+                          <button 
+                            onClick={handleRedeem}
+                            className="bg-mystic-600 hover:bg-mystic-500 text-white px-4 py-2 rounded-lg text-sm font-bold"
+                          >
+                              Apply
+                          </button>
+                      </div>
+                      {errorMsg && <p className="text-red-400 text-xs mt-1">{errorMsg}</p>}
+                  </div>
+              ) : (
+                <button 
+                    onClick={() => setShowRedeem(true)}
+                    className="flex items-center gap-2 text-xs text-slate-500 hover:text-mystic-400 transition-colors mx-auto"
+                >
+                    <Gift size={12} /> Have a code?
+                </button>
+              )}
+              
+              <p className="mt-4 text-[10px] text-center text-slate-600">
+                Secure payment handling. By subscribing, you support independent development.
+              </p>
+          </div>
         </div>
       </div>
     </div>
