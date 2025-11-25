@@ -1,42 +1,39 @@
 import React from 'react';
-import { X, Check, Crown, Sparkles, Lock } from 'lucide-react';
+import { X, Check, Crown, Sparkles, Lock, ExternalLink } from 'lucide-react';
 
 interface SubscriptionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onUpgrade: () => void;
 }
 
-export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, onClose, onUpgrade }) => {
+export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   const handlePayment = (plan: 'monthly' | 'yearly') => {
-    // 1. Construct PayPal Link
+    // 1. Configuration
     const email = "adamahmedadelabdelwahab@gmail.com";
     const itemName = plan === 'monthly' ? "Dream Lab Premium (Monthly)" : "Dream Lab Premium (Yearly)";
     const amount = plan === 'monthly' ? "10.00" : "99.00";
-    // Using standard PayPal "Buy Now" link structure
+    
+    // 2. Build PayPal Link (Standard Business Link)
+    // Note: To make the redirect work automatically, you MUST set 'Auto Return' to ON in your PayPal Business Dashboard
+    // and set the Return URL to your Vercel Link (e.g., https://dream-lab.vercel.app/?payment_success=true)
     const paypalLink = `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${email}&item_name=${encodeURIComponent(itemName)}&amount=${amount}&currency_code=USD`;
 
-    // 2. Open PayPal in new tab
-    window.open(paypalLink, '_blank');
-
-    // 3. For this app demo, we simulate immediate activation so the user can use it.
-    // In a real backend app, you'd wait for a webhook confirmation.
-    onUpgrade(); 
-    onClose();
+    // 3. Open PayPal
+    window.location.href = paypalLink;
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-slate-900/90 backdrop-blur-sm transition-opacity"
+        className="absolute inset-0 bg-slate-900/95 backdrop-blur-md transition-opacity"
         onClick={onClose}
       />
 
       {/* Modal Content */}
-      <div className="relative bg-slate-800 rounded-3xl shadow-2xl border border-slate-700 max-w-4xl w-full overflow-hidden flex flex-col md:flex-row animate-float">
+      <div className="relative bg-slate-800 rounded-3xl shadow-2xl border border-slate-700 max-w-4xl w-full overflow-hidden flex flex-col md:flex-row animate-float scale-100 opacity-100">
         <button 
           onClick={onClose}
           className="absolute top-4 right-4 text-slate-400 hover:text-white z-10 p-2 bg-slate-900/50 rounded-full"
@@ -103,9 +100,9 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, on
               </div>
               <button 
                 onClick={() => handlePayment('monthly')}
-                className="mt-4 w-full py-2 bg-slate-700 hover:bg-indigo-600 text-white rounded-lg font-medium transition-colors"
+                className="mt-4 w-full py-2 bg-slate-700 hover:bg-indigo-600 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
               >
-                Select Monthly
+                Select Monthly <ExternalLink size={14} />
               </button>
             </div>
 
@@ -126,15 +123,15 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, on
               </div>
               <button 
                 onClick={() => handlePayment('yearly')}
-                className="mt-4 w-full py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white rounded-lg font-bold transition-colors shadow-lg"
+                className="mt-4 w-full py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white rounded-lg font-bold transition-colors shadow-lg flex items-center justify-center gap-2"
               >
-                Select Yearly
+                Select Yearly <ExternalLink size={14} />
               </button>
             </div>
           </div>
 
           <p className="mt-6 text-xs text-center text-slate-500">
-            By subscribing, you agree to our Terms of Service. Payment is processed securely by PayPal.
+            Note: After payment, PayPal will redirect you back here to unlock your features automatically.
           </p>
         </div>
       </div>

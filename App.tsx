@@ -7,7 +7,7 @@ import { Stats } from './components/Stats';
 import { SubscriptionModal } from './components/SubscriptionModal';
 import { getDreams, getSections, saveSection, deleteSection, getPremiumStatus, savePremiumStatus, deleteDream } from './services/storage';
 import { Dream, ViewState, Section } from './types';
-import { Plus, Heart, Folder } from 'lucide-react';
+import { Plus, Heart, Folder, CheckCircle } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 const App: React.FC = () => {
@@ -21,14 +21,31 @@ const App: React.FC = () => {
   // Premium State
   const [isPremium, setIsPremium] = useState(false);
   const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
   useEffect(() => {
-    // Check for API Key env var
+    console.log("Dream Lab v2.0 Initializing...");
+
+    // 1. Check for API Key
     if (!process.env.API_KEY) {
       setApiKeyMissing(true);
     }
+
+    // 2. Load Data
     loadData();
     setIsPremium(getPremiumStatus());
+
+    // 3. CHECK FOR PAYMENT SUCCESS (The Secret Link Logic)
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('payment_success') === 'true') {
+        console.log("Payment successful! Unlocking Premium...");
+        handleUpgrade();
+        setShowSuccessMessage(true);
+        // Clean the URL so they don't see the messy code
+        window.history.replaceState({}, document.title, "/");
+        // Hide success message after 5 seconds
+        setTimeout(() => setShowSuccessMessage(false), 5000);
+    }
   }, []);
 
   const loadData = () => {
@@ -47,7 +64,6 @@ const App: React.FC = () => {
   };
 
   const handleDeleteSection = (id: string) => {
-      // Removed confirm dialog to fix mobile touch issues
       deleteSection(id);
       if (selectedSectionId === id) {
           setView(ViewState.DASHBOARD);
@@ -68,11 +84,10 @@ const App: React.FC = () => {
 
   const handleBackToDashboard = () => {
     setSelectedDream(null);
-    // If we were in a section or favorites, go back there, otherwise dashboard
     if (view !== ViewState.SECTION && view !== ViewState.FAVORITES) {
         setView(ViewState.DASHBOARD);
     }
-    loadData(); // Refresh in case of changes
+    loadData();
   };
 
   const getFilteredDreams = () => {
@@ -94,7 +109,7 @@ const App: React.FC = () => {
           <div className="text-center p-8 bg-slate-800 rounded-xl border border-red-900">
             <h2 className="text-xl font-bold mb-2">Configuration Error</h2>
             <p>API_KEY environment variable is missing.</p>
-            <p className="text-sm text-slate-500 mt-2">Please configure your Gemini API Key to continue.</p>
+            <p className="text-sm text-slate-500 mt-2">Please configure your Gemini API Key in Vercel.</p>
           </div>
         </div>
       );
@@ -157,7 +172,7 @@ const App: React.FC = () => {
                 </div>
                 <button 
                 onClick={() => setView(ViewState.NEW_ENTRY)}
-                className="w-full md:w-auto bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 text-sm font-bold transition-colors"
+                className="w-full md:w-auto bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 text-sm font-bold transition-colors shadow-lg shadow-indigo-900/20"
                 >
                     <Plus size={16} /> New Dream
                 </button>
@@ -200,10 +215,16 @@ const App: React.FC = () => {
       <SubscriptionModal 
         isOpen={isSubscriptionModalOpen} 
         onClose={() => setIsSubscriptionModalOpen(false)}
-        onUpgrade={handleUpgrade}
       />
+
+      {/* Payment Success Toast */}
+      {showSuccessMessage && (
+          <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[100] bg-green-500 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-2 animate-float font-bold">
+              <CheckCircle size={20} />
+              Premium Activated! Thank you for your support.
+          </div>
+      )}
       
-      {/* Navigation now handles its own responsive placement */}
       <Navigation 
         currentView={view} 
         setView={(v) => {
@@ -222,7 +243,6 @@ const App: React.FC = () => {
         onOpenPremium={() => setIsSubscriptionModalOpen(true)}
       />
 
-      {/* Main Content Area: Scrollable */}
       <main className="flex-1 p-4 md:p-12 overflow-y-auto min-h-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800 via-slate-900 to-black">
         <div className="max-w-6xl mx-auto">
             {renderContent()}
