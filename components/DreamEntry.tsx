@@ -52,6 +52,33 @@ export const DreamEntry: React.FC<DreamEntryProps> = ({ onComplete, isPremium, o
       setIsFavorite(!isFavorite);
   }
 
+  // Compress Image to save storage space (Fixes "Image not loading" on mobile)
+  const compressImage = (base64Str: string): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.src = base64Str;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 400; // Shrink to 400px width (plenty for phone screen)
+        const scaleSize = MAX_WIDTH / img.width;
+        canvas.width = MAX_WIDTH;
+        canvas.height = img.height * scaleSize;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+            resolve(base64Str); // Fallback
+            return;
+        }
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        // Convert to JPEG with quality 0.7
+        resolve(canvas.toDataURL('image/jpeg', 0.7));
+      };
+      img.onerror = () => {
+          resolve(base64Str);
+      }
+    });
+  };
+
   const handleSubmit = async () => {
     if (!content.trim()) return;
 
@@ -72,7 +99,9 @@ export const DreamEntry: React.FC<DreamEntryProps> = ({ onComplete, isPremium, o
       // 2. Generate Image
       let imageUrl: string | undefined;
       try {
-        imageUrl = await generateDreamVisual(content, analysis.mood);
+        const rawImage = await generateDreamVisual(content, analysis.mood);
+        // Compress it before saving!
+        imageUrl = await compressImage(rawImage);
       } catch (err) {
         console.warn("Image gen failed, skipping", err);
       }

@@ -244,7 +244,10 @@ const App: React.FC = () => {
         onOpenPremium={() => setIsSubscriptionModalOpen(true)}
       />
 
-      <main className="flex-1 p-4 md:p-12 overflow-y-auto min-h-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800 via-slate-900 to-black">
+      <main 
+        className="flex-1 p-4 md:p-12 overflow-y-auto min-h-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800 via-slate-900 to-black"
+        style={{ overscrollBehavior: 'none' }} // Prevent parent pull-to-refresh
+      >
         <div className="max-w-6xl mx-auto">
             {renderContent()}
         </div>

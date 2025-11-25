@@ -274,7 +274,10 @@ export const DreamDetail: React.FC<DreamDetailProps> = ({ dream, onBack, onDelet
                      </div>
                 </div>
             ) : (
-                <>
+                <div 
+                    className="max-h-[300px] overflow-y-auto pr-2 custom-scrollbar"
+                    style={{ overscrollBehavior: 'contain' }}
+                >
                     <p className="text-slate-200 text-lg leading-relaxed font-serif italic relative z-10 whitespace-pre-wrap">
                     "{dream.content}"
                     </p>
@@ -288,7 +291,7 @@ export const DreamDetail: React.FC<DreamDetailProps> = ({ dream, onBack, onDelet
                             ))}
                         </div>
                     )}
-                </>
+                </div>
             )}
           </div>
         </div>
@@ -324,7 +327,10 @@ export const DreamDetail: React.FC<DreamDetailProps> = ({ dream, onBack, onDelet
                  </span>
              </div>
 
-             <div className="prose prose-invert prose-slate relative z-10">
+             <div 
+                className="prose prose-invert prose-slate relative z-10 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar"
+                style={{ overscrollBehavior: 'contain' }}
+             >
                  <h4 className="text-mystic-400 font-bold mb-2">Interpretation</h4>
                  <p className="text-slate-300 leading-relaxed">
                      {dream.analysis?.interpretation}
@@ -344,7 +350,7 @@ export const DreamDetail: React.FC<DreamDetailProps> = ({ dream, onBack, onDelet
                   </div>
               </div>
               
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth">
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth" style={{ overscrollBehavior: 'contain' }}>
                   {messages.length === 0 && (
                       <div className="text-center text-slate-500 mt-10 md:mt-20 text-sm px-10">
                           <p className="mb-2">"Ask me about the symbols in your dream..."</p>
